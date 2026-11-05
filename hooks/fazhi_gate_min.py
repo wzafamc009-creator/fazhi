@@ -123,10 +123,16 @@ def map_tool(tool, ti, cwd, root):
         if is_readonly_cmd(cmd, cwd, root):
             return "read", cwd, True, "readonly"
         return "exec", cwd, False, cmd
-    return "unknown", cwd, False, "unmapped:" + n
+    # 未知工具：先按名字猜"是不是只读"，猜不到就 fail-closed（deny）
+    if any(h in n for h in ("read", "get", "list", "find", "search", "glob",
+                            "grep", "ls", "cat", "view", "stat", "head",
+                            "tail", "which", "pwd", "info")):
+        return "read", cwd, True, "unmapped-readonly:" + n
+    return "unknown", n, False, "unmapped:" + n
 
 
 def decide(action, target, root):
+    """-> (decision, code, msg)"""
     t = str(target)
     is_abs = t.startswith(("/", "\\")) or bool(re.match(r"^[a-zA-Z]:", t))
     if action in ("read", "write"):
@@ -152,7 +158,12 @@ def decide(action, target, root):
         return "ask", "E_ASK_EGRESS", "outbound request needs human approval"
     if action == "exec":
         return "ask", "E_ASK_EXEC", "arbitrary command needs human approval"
-    return "allow", "E_OK", "unmapped tool: allowed, still logged"
+    if action == "unknown":
+        # fail-closed：不认识的工具默认拒绝，不再静默放行
+        return ("deny", "E_UNKNOWN_TOOL",
+                "unknown tool '%s' denied by default; if it is safe, add it to "
+                ".fazhi/allow_tools.txt" % t)
+    return "allow", "E_OK", ""
 
 
 def main():
@@ -172,6 +183,24 @@ def main():
             break
 
     action, target, rev, note = map_tool(tool, ti, str(cwd), root)
+
+    # 白名单（fail-closed 的逃生门）：
+    # 用户可在 <root>/.fazhi/allow_tools.txt 里逐行列出"确实安全"的工具名，
+    # 或写一个 * 表示"未知工具全部放行"（不推荐）。
+    if action == "unknown":
+        allow_file = root / ".fazhi" / "allow_tools.txt"
+        if allow_file.is_file():
+            try:
+                names = {
+                    ln.strip().lower()
+                    for ln in allow_file.read_text(encoding="utf-8").splitlines()
+                    if ln.strip() and not ln.strip().startswith("#")
+                }
+                if tool.lower() in names or "*" in names:
+                    action, target = "read", cwd
+            except Exception:
+                pass
+
     decision, code, msg = decide(action, target, root)
 
     try:
