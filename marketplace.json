@@ -1,0 +1,15 @@
+{
+  "name": "fazhi",
+  "owner": {
+    "name": "Ruojian Digital Technology (Wenzhou) Co., Ltd."
+  },
+  "plugins": [
+    {
+      "name": "fazhi",
+      "source": ".",
+      "description": "A brake pedal for your AI: gate irreversible actions before they run, and keep a tamper-evident ledger of every allow/deny.",
+      "version": "0.1.0",
+      "license": "MIT"
+    }
+  ]
+}
