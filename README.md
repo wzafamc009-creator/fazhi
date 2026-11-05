@@ -80,6 +80,17 @@ git --git-dir=<your-remote> log     # should say: does not have any commits yet
 - ❌ **No sandbox.** It does not isolate processes.
 - ❌ **Not a replacement for code review.** It answers "may this happen?", not "is this correct?".
 - ⚠️ **`ask` may not be honoured by every host.** In Cursor, `deny` is enforced (tested); `ask` is currently not — treat `deny` as the hard guarantee.
+- ✅ **Fail-closed on unknown tools** (since 0.1.1): if the host sends a tool name we don't
+  recognise, the action is **denied**, not allowed. If a legitimate tool gets blocked, add its
+  name to `.fazhi/allow_tools.txt` (one per line, `#` for comments, `*` = allow all).
+
+## Changelog
+
+- **0.1.1** — fix a fail-open bug: unknown tool names were silently **allowed**. They are now
+  **denied** by default. This matters because hosts do rename tools (Cursor sends `Shell`, not
+  `Bash`); a hook matching only `Bash` silently allows every command without any error.
+  Escape hatch: `.fazhi/allow_tools.txt`.
+- **0.1.0** — first release.
 
 ## Ledger
 
