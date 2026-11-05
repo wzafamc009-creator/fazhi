@@ -1,0 +1,13 @@
+{
+  "name": "fazhi",
+  "version": "0.1.0",
+  "description": "A brake pedal for your AI: gate irreversible actions before they run, and keep a tamper-evident ledger of every allow/deny.",
+  "author": {
+    "name": "Ruojian Digital Technology (Wenzhou) Co., Ltd.",
+    "url": "https://github.com/"
+  },
+  "homepage": "",
+  "license": "MIT",
+  "keywords": ["safety", "guardrail", "audit", "hooks", "irreversible", "ledger"],
+  "hooks": "./hooks/hooks.json"
+}
