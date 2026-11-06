@@ -6,3 +6,4 @@ __pycache__/
 .DS_Store
 Thumbs.db
 PUSH.md
+_*.txt
