@@ -1,6 +1,29 @@
 # fazhi — a brake pedal for your AI
 
-> **Your AI can still work. It just can't do the things it shouldn't — and every decision leaves a receipt.**
+> **Your AI can still work. It just can't do the things it shouldn't.**
+
+Most AI guardrails filter what the model **says** — content, jailbreaks, PII.
+Fazhi gates what the agent **does** — `delete`, `git push`, `install`, `egress`.
+
+Deny means denied (exit code 2). Every decision lands in a hash-chained ledger
+**you can recompute yourself, without trusting my code**:
+
+```
+$ python verify_ledger.py .fazhi/ledger.jsonl
+19/19 entries OK, chain intact
+```
+
+## How is this different?
+
+| Project | Layer | What it does |
+|---|---|---|
+| Guardrails AI / NeMo Guardrails | content | filters model **output** (jailbreaks, PII, off-topic) |
+| E2B / other sandboxes | process | isolates the agent in a **VM** |
+| Langfuse / LangSmith | observation | **records** what happened — after the fact |
+| **fazhi** | **action** | **blocks the action before it runs, then proves what happened** |
+
+Those answer "what did it say", "where did it run", "what did it do".
+This answers **"may this happen?"** and **"can you prove it afterwards?"**
 
 ## The problem (4 real situations)
 
@@ -92,7 +115,7 @@ git --git-dir=<your-remote> log     # should say: does not have any commits yet
   Escape hatch: `.fazhi/allow_tools.txt`.
 - **0.1.0** — first release.
 
-## Ledger
+## Ledger — and how to check it yourself
 
 `.fazhi/ledger.jsonl`, one line per decision:
 
@@ -100,7 +123,27 @@ git --git-dir=<your-remote> log     # should say: does not have any commits yet
 {"action":"push","decision":"deny","code":"E_DENY_PUSH","tool":"Shell","prev":"…","h":"…"}
 ```
 
-Each line stores `prev` (previous hash) and `h = sha256(prev + body)`. Anyone can recompute it with plain `sha256` — **you don't have to trust us to verify it.**
+Each line stores `prev` (hash of the previous line) and `h = sha256(prev + body)`.
+`body` is the line without `prev` / `h` / `ts`, serialised with
+`json.dumps(..., ensure_ascii=False, sort_keys=True)`.
+
+Verify with the included script — **pure stdlib, no imports from fazhi, no network**:
+
+```
+$ python verify_ledger.py .fazhi/ledger.jsonl
+19/19 entries OK, chain intact
+```
+
+Change one byte anywhere, and it stops being intact:
+
+```
+$ python verify_ledger.py .fazhi/ledger.jsonl
+18/19 entries OK; first break at line 7
+BROKEN at line 7: hash mismatch
+```
+
+**That is the whole point**: you don't have to believe me when I say "it was blocked" —
+you can recompute it yourself.
 
 ## License
 
