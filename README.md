@@ -96,6 +96,51 @@ And the target repo receives **no commit**. Check:
 git --git-dir=<your-remote> log     # should say: does not have any commits yet
 ```
 
+## Recipes
+
+### 1. Block auto `git commit` / `git push`
+
+The agent can still **read** git state, but it cannot **change** it.
+
+`push` is already denied by the built-in gate. For `commit`, the gate asks a human —
+and if your host doesn't honour `ask` (Cursor currently doesn't), it simply won't commit.
+
+Why this works where a `denylist` doesn't:
+
+- a denylist matches a **single command prefix**, so `git add . && git commit -m x` slips through
+- the hook sees the **whole command string**, so the chained form is caught too
+
+### 2. Protect a directory (e.g. `.github/`)
+
+Edit `PROTECTED_NAMES` in `hooks/fazhi_gate_min.py`:
+
+```python
+PROTECTED_NAMES = (".git", ".fazhi", ".claude", ".cursor", ".github")
+```
+
+`is_protected()` compares only the **first path segment**, so adding `.github`
+protects the whole tree (`.github/workflows/ci.yml` included).
+
+### 3. Allow a tool that got blocked by mistake
+
+Since 0.1.1, unknown tool names are **denied**. If a legitimate tool gets caught,
+list it in `.fazhi/allow_tools.txt`:
+
+```
+# one tool name per line, # for comments
+MySafeTool
+```
+
+### 4. Verify what the agent actually did
+
+```powershell
+python verify_ledger.py .fazhi/ledger.jsonl
+# 19/19 entries OK, chain intact
+```
+
+Then `git diff` on your own repo tells you the rest. **The ledger proves the gate ran;
+git proves the code changed.**
+
 ## What it does NOT do (read this part)
 
 - ❌ **No detection-rate promise.** It is a conservative gate, not a detector. Some dangerous actions will look ordinary and pass.
